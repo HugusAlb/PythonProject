@@ -1,198 +1,151 @@
-import sys
 import os
+import sys
 import uuid
-import pyfiglet
 import gspread
+import tkinter as tk
+from datetime import datetime
+from tkinter import ttk, messagebox
 from oauth2client.service_account import ServiceAccountCredentials
 
-def limpar_tela():
-    os.system('cls' if os.name == 'nt' else 'clear')
-
-def pausar():
-    input("\n\nPressione [ENTER] para voltar ao menu...")
-
-def conectar_banco():
-    scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
-             "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
-    
-    if getattr(sys, 'frozen', False):
-        diretorio_atual = os.path.dirname(sys.executable)
-    else:
-        diretorio_atual = os.path.dirname(os.path.abspath(__file__))
-        
-    caminho_json = os.path.join(diretorio_atual, "credenciais.json")
-    
-    if not os.path.exists(caminho_json):
-        raise FileNotFoundError(f"O arquivo 'credenciais.json' não foi encontrado na pasta: {diretorio_atual}")
-
-    creds = ServiceAccountCredentials.from_json_keyfile_name(caminho_json, scope)
-    client = gspread.authorize(creds)
-    
-    return client.open("Banco-Alunos").sheet1
-
-def cadastrar(sheet):
-    limpar_tela()
-    print("--- NOVO CADASTRO ---\n")
-    
-    nome = input('Digite o nome do aluno: ').lower()
-    try:
-        idade = int(input('Digite a idade do aluno: '))
-        nota = float(input("Digite a nota do aluno: "))
-    except ValueError:
-        print("\nErro: Idade ou Nota inválidas (digite apenas números).")
-        pausar()
-        return
-
-    novo_id = str(uuid.uuid4())
-
-    print("\nSalvando na nuvem...")
-    
-    sheet.append_row([novo_id, nome, idade, nota])
-    
-    print('\nAluno cadastrado com sucesso!')
-    pausar()
-
-def listar(sheet):
-    limpar_tela()
-    print("--- CARREGANDO DADOS ---\n")
-    
-    lista_de_alunos = sheet.get_all_records()
-    total = len(lista_de_alunos)
-    
-    limpar_tela()
-    print(f'=== LISTA DE ALUNOS ({total} registros) ===\n')
-    
-    print(f"{'NOME':<20} | {'IDADE':<10} | {'NOTA'}")
-    print("-" * 40)
-    
-    for aluno in lista_de_alunos:
-        nome = aluno.get("Nome", "---")
-        idade = aluno.get("Idade", "--")
-        nota = aluno.get("Nota", "--")
-        
-        print(f"{nome:<20} | {str(idade) + ' anos':<10} | {nota}")
-    
-    pausar()
-
-def buscar(sheet):
-    limpar_tela()
-    procurado = input('Digite o nome do Aluno para buscar: ').lower()
-    
-    print("\nBuscando...")
-    try:
-        cell = sheet.find(procurado)
-        aluno_dados = sheet.row_values(cell.row)
-        
-        limpar_tela()
-        print(f'--- ALUNO ENCONTRADO ---\n')
-        print(f'ID:    {aluno_dados[0]}')
-        print(f'Nome:  {aluno_dados[1]}')
-        print(f'Idade: {aluno_dados[2]} anos')
-        print(f'Nota:  {aluno_dados[3]}')
-        
-    except gspread.exceptions.CellNotFound:
-        print('\nAluno não consta no sistema!')
-    
-    pausar()
-
-def remover(sheet):
-    limpar_tela()
-    procurado = input('Digite o nome do Aluno para remover: ').lower()
-    
-    print("\nProcurando...")
-    try:
-        cell = sheet.find(procurado)
-        sheet.delete_rows(cell.row)
-        print(f'\nSucesso! Aluno {procurado} removido da base.')
-    except gspread.exceptions.CellNotFound:
-        print(f"\nErro: Não foi possível achar o aluno {procurado}")
-    
-    pausar()
-
-def mediana(sheet):
-    limpar_tela()
-    print("Calculando média...\n")
-    
-    lista_de_alunos = sheet.get_all_records()
-    
-    if not lista_de_alunos:
-        print("Não há alunos para calcular a média.")
-        pausar()
-        return
-
-    soma_notas = 0
-    total_alunos = 0
-    
-    for aluno in lista_de_alunos:
+class SistemaEscolar:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Sistema Santa Ursula")
+        self.root.geometry("850x600")
         try:
-            nota_str = str(aluno.get("Nota", 0)).replace(',', '.')
-            soma_notas += float(nota_str)
-            total_alunos += 1
-        except ValueError:
-            continue
-    
-    if total_alunos > 0:
-        media_final = soma_notas / total_alunos
-        print(f'A média das notas da turma é: {media_final:.2f}')
-    else:
-        print("Não foi possível calcular a média.")
-        
-    pausar()
-
-def main():
-    limpar_tela()
-    print("Conectando ao Google Sheets...")
-    
-    try:
-        sheet = conectar_banco()
-    except FileNotFoundError as fnf_error:
-        print(f"\nERRO DE ARQUIVO:\n{fnf_error}")
-        print("\nDICA: Certifique-se de que o arquivo 'credenciais.json' está na mesma pasta do executável.")
-        input("\nPressione ENTER para sair...")
-        return
-    except Exception as e:
-        print(f"Erro crítico ao conectar: {e}")
-        input("\nPressione ENTER para sair...")
-        return
-
-    while True:
-        limpar_tela()
-        
-        try:
-            print(pyfiglet.figlet_format('Santa Ursula', font='slant'))
-        except:
-            print("--- SANTA URSULA ---\n")
+            if getattr(sys, 'frozen', False):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
             
-        print("SISTEMA DE GESTÃO ESCOLAR")
-        print("="*30)
-        print("1 - Cadastrar Aluno")
-        print("2 - Listar Alunos")
-        print("3 - Buscar Aluno")
-        print("4 - Remover Aluno")
-        print("5 - Calcular Média da Turma")
-        print("0 - Sair")
-        print("="*30)
-        
-        opcao = input("\nEscolha uma opção: ")
+            icon_path = os.path.join(base_path, "logo.ico")
+            if os.path.exists(icon_path):
+                self.root.iconbitmap(icon_path)
+        except Exception:
+            pass 
 
-        if opcao == '0':
-            limpar_tela()
-            print('Saindo do sistema. Até logo!')
-            input("\nPressione ENTER para fechar a janela...")
-            break
-        elif opcao == '1':
-            cadastrar(sheet)
-        elif opcao == '2':
-            listar(sheet)
-        elif opcao == '3':
-            buscar(sheet)
-        elif opcao == '4':
-            remover(sheet)
-        elif opcao == '5':
-            mediana(sheet)
-        else:
-            print("\nOpção inválida!")
-            input("Pressione Enter para tentar novamente...")
+        try:
+            self.conectar_banco()
+        except Exception as e:
+            messagebox.showerror("Erro Crítico", f"Falha ao conectar: {e}")
+            self.root.destroy()
+            return
+
+        self.setup_ui()
+        self.listar_alunos()
+
+    def conectar_banco(self):
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/spreadsheets",
+                 "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+        
+        base_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+        json_path = os.path.join(base_dir, "credenciais.json")
+        
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
+        client = gspread.authorize(creds)
+        ss = client.open("Banco-Alunos")
+        self.sheet_alunos = ss.sheet1
+        self.sheet_logs = ss.worksheet("Logs")
+
+    def setup_ui(self):
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=25)
+        
+        p_top = tk.Frame(self.root, pady=10)
+        p_top.pack(fill="x", padx=10)
+
+        tk.Label(p_top, text="Nome:").pack(side="left")
+        self.e_nome = tk.Entry(p_top, width=25)
+        self.e_nome.pack(side="left", padx=5)
+
+        tk.Label(p_top, text="Idade:").pack(side="left")
+        self.e_idade = tk.Entry(p_top, width=5)
+        self.e_idade.pack(side="left", padx=5)
+
+        tk.Label(p_top, text="Nota:").pack(side="left")
+        self.e_nota = tk.Entry(p_top, width=5)
+        self.e_nota.pack(side="left", padx=5)
+
+        tk.Button(p_top, text="Cadastrar", command=self.cadastrar, bg="#4CAF50", fg="white").pack(side="left", padx=10)
+
+        p_mid = tk.Frame(self.root, pady=5)
+        p_mid.pack(fill="x", padx=10)
+
+        tk.Button(p_mid, text="Recarregar", command=self.listar_alunos).pack(side="left")
+        tk.Button(p_mid, text="Excluir", command=self.remover, bg="#f44336", fg="white").pack(side="left", padx=5)
+        tk.Button(p_mid, text="Média da turma", command=self.media).pack(side="left", padx=5)
+        
+        self.e_busca = tk.Entry(p_mid, width=20)
+        self.e_busca.pack(side="right", padx=5)
+        tk.Button(p_mid, text="Buscar", command=self.buscar).pack(side="right")
+
+        cols = ("ID", "Nome", "Idade", "Nota")
+        self.tree = ttk.Treeview(self.root, columns=cols, show="headings")
+        for c in cols: self.tree.heading(c, text=c)
+        
+        self.tree.column("ID", width=220, minwidth=220)
+        self.tree.column("Nome", width=200)
+        self.tree.column("Idade", width=50)
+        self.tree.column("Nota", width=50)
+
+        scroll = ttk.Scrollbar(self.root, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scroll.set)
+        
+        self.tree.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+        scroll.pack(side="right", fill="y", pady=10)
+
+    def log(self, acao, obs=""):
+        try:
+            self.sheet_logs.append_row([datetime.now().strftime('%d/%m/%Y %H:%M:%S'), acao, obs])
+        except: pass
+
+    def cadastrar(self):
+        n, i, nt = self.e_nome.get().lower(), self.e_idade.get(), self.e_nota.get()
+        if not n or not i or not nt: return
+        try:
+            uid = str(uuid.uuid4())
+            self.sheet_alunos.append_row([uid, n, int(i), float(nt.replace(',', '.'))])
+            self.log("CADASTRO", f"{n} ({uid})")
+            self.e_nome.delete(0, 'end'); self.e_idade.delete(0, 'end'); self.e_nota.delete(0, 'end')
+            self.listar_alunos()
+            messagebox.showinfo("OK", "Salvo!")
+        except ValueError: messagebox.showerror("Erro", "Dados inválidos.")
+
+    def listar_alunos(self):
+        [self.tree.delete(x) for x in self.tree.get_children()]
+        try:
+            for r in self.sheet_alunos.get_all_records():
+                self.tree.insert("", "end", values=(r.get("ID"), r.get("Nome"), r.get("Idade"), r.get("Nota")))
+        except: pass
+
+    def remover(self):
+        sel = self.tree.selection()
+        if not sel: return
+        vals = self.tree.item(sel[0])['values']
+        if messagebox.askyesno("Confirmar", f"Excluir {vals[1]}?"):
+            try:
+                cell = self.sheet_alunos.find(vals[0])
+                self.sheet_alunos.delete_rows(cell.row)
+                self.log("REMOÇÃO", f"{vals[1]} ({vals[0]})")
+                self.listar_alunos()
+            except: messagebox.showerror("Erro", "Não encontrado.")
+
+    def buscar(self):
+        term = self.e_busca.get().lower()
+        if not term: return self.listar_alunos()
+        rows = [self.tree.item(i)['values'] for i in self.tree.get_children()]
+        [self.tree.delete(i) for i in self.tree.get_children()]
+        [self.tree.insert("", "end", values=r) for r in rows if term in str(r[1]).lower()]
+
+    def media(self):
+        recs = self.sheet_alunos.get_all_records()
+        notas = [float(str(r.get("Nota",0)).replace(',','.')) for r in recs if r.get("Nota")]
+        if notas:
+            m = sum(notas)/len(notas)
+            self.log("CONSULTA", f"Média: {m:.2f}")
+            messagebox.showinfo("Média", f"{m:.2f}")
 
 if __name__ == "__main__":
-    main()
+    root = tk.Tk()
+    app = SistemaEscolar(root)
+    root.mainloop()
