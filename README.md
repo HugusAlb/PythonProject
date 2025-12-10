@@ -6,7 +6,7 @@ Um sistema desktop desenvolvido em **Python** com interface gráfica **Tkinter**
 ![Python](https://img.shields.io/badge/Python-3.x-blue)
 ![Database](https://img.shields.io/badge/Database-Google%20Sheets-green)
 
-## ✨ Funcionalidades
+## Funcionalidades
 
 * **Cadastro de Alunos:** Registro de Nome, Idade e Nota com ID único (UUID).
 * **Banco de Dados na Nuvem:** Leitura e escrita direta no Google Sheets.
@@ -15,14 +15,14 @@ Um sistema desktop desenvolvido em **Python** com interface gráfica **Tkinter**
 * **Estatísticas:** Cálculo automático da média de notas da turma.
 * **Logs de Auditoria:** Registro automático de todas as ações (cadastros e remoções) em uma aba separada com data e hora.
 
-## 🛠️ Tecnologias
+## Tecnologias
 
 * **Python 3.10+**
 * **Tkinter** (Interface Gráfica)
 * **gspread** (API do Google Sheets)
 * **oauth2client** (Autenticação)
 
-## 🚀 Como Executar o Projeto
+## Como Executar o Projeto
 
 ### 1. Pré-requisitos
 Certifique-se de ter o Python instalado. Em seguida, instale as bibliotecas necessárias:
