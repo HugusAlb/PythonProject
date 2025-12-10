@@ -1,4 +1,4 @@
-﻿# 🎓 Sistema Escolar Santa Ursula
+﻿# Sistema Escolar Santa Ursula
 
 Um sistema desktop desenvolvido em **Python** com interface gráfica **Tkinter** para gerenciamento de alunos, notas e médias escolares. O diferencial desta aplicação é a utilização do **Google Sheets** como banco de dados em nuvem, permitindo que as informações sejam sincronizadas em tempo real.
 
