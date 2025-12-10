@@ -32,6 +32,6 @@ pip install gspread oauth2client
 ```
 após isso só executar no terminal:
 
-```bash
+```python
 python main.py
 ```
