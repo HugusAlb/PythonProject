@@ -1,0 +1,6 @@
+credenciais.json
+logo.ico
+gerar_logo.py
+build/
+dist/
+*.spec
